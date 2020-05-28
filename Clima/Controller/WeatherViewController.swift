@@ -37,6 +37,7 @@ import CoreLocation
 
 class WeatherViewController: UIViewController /* superclass */ {
 
+//    create the ib outlets
     @IBOutlet weak var conditionImageView: UIImageView!
     @IBOutlet weak var temperatureLabel: UILabel!
     @IBOutlet weak var cityLabel: UILabel!
@@ -45,25 +46,35 @@ class WeatherViewController: UIViewController /* superclass */ {
     @IBOutlet weak var highLabel: UILabel!
     @IBOutlet weak var lowLabel: UILabel!
     @IBOutlet weak var unitsLabel: UILabel!
+    @IBOutlet weak var weatherLabel: UILabel!
     
+//    define the units we want
     let units = ["imperial", "metric"]
     
 //    creates an instance of the WeatherManager class, which can then do all the functions with retrieving the weather
     var weatherManager = WeatherManager()
+    
+//    create an instance of the core location manager
     let locationManager = CLLocationManager()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
-
-//        set the state of the units
-        unitsControl.selectedSegmentIndex = 0
         
         locationManager.delegate = self
         
-//        request to have the user's location
+//        prompt the user to have their location
         locationManager.requestWhenInUseAuthorization()
-        locationManager.requestLocation()
+        
+//        decrease the accuracy of the request
+        locationManager.desiredAccuracy = kCLLocationAccuracyThreeKilometers
+        
+        DispatchQueue.global(qos: .userInteractive).async {
+            
+//            request for the user's location
+            self.locationManager.requestLocation()
+        }
+        
         
 //        set up the text field to call functions in this class
 //        each UITextField has a delegate property
@@ -79,8 +90,12 @@ class WeatherViewController: UIViewController /* superclass */ {
     
     //    if the location button is pressed
     @IBAction func locationPressed(_ sender: UIButton) {
-//        request for the location
-        locationManager.requestLocation()
+        
+        DispatchQueue.global(qos: .userInteractive).async {
+            
+//            request for the user's location
+            self.locationManager.requestLocation()
+        }
                 
     }
     
@@ -138,18 +153,6 @@ extension WeatherViewController: UITextFieldDelegate /* protocol for the textfie
             searchTextField.endEditing(true)
             return true
         }
-        
-//        asks delegate if textfield should end editing
-        func textFieldShouldEndEditing(_ textField: UITextField) -> Bool {
-//            make sure the user entered something
-            if textField.text != "" {
-                return true
-            } else {
-
-                textField.placeholder = "Type something"
-                return false
-            }
-        }
 
 //        asks if textfield if it did end editing
         func textFieldDidEndEditing(_ textField: UITextField) {
@@ -163,7 +166,7 @@ extension WeatherViewController: UITextFieldDelegate /* protocol for the textfie
 //            find what unit it is
             let unit = units[selectedUnit]
             
-            if let city = searchTextField.text {
+            if let city = searchTextField.text, city.count != 0 {
                 
 //                turn words into a single word separated by + signs
                 let splitCity = city.split(separator: " ")
@@ -192,10 +195,11 @@ extension WeatherViewController: WeatherManagerDelegate /* protocol for weather 
                 
     //            update the UI
                 self.temperatureLabel.text = weather.temperatureString
-                self.conditionImageView.image = UIImage(systemName: weather.conditionName)
-                self.cityLabel.text = weather.cityName
+                self.conditionImageView.image = UIImage(systemName: weather.conditionImage)
+                self.cityLabel.text = "\(weather.cityName), \(weather.country)"
                 self.highLabel.text = weather.maxString
                 self.lowLabel.text = weather.minString
+                self.weatherLabel.text = weather.description
                 
             }
         
@@ -203,11 +207,16 @@ extension WeatherViewController: WeatherManagerDelegate /* protocol for weather 
 
     //    runs this function when there is an error with the parsing
         func didFailWithError(_ error: Error) {
+            
+//            move to the main thread
             DispatchQueue.main.async {
-//                self.searchTextField.placeholder = "Error"
+                
+//                display "Error"
+                self.searchTextField.placeholder = "Error"
+            
             }
+            
         }
-    
 }
 
 
@@ -238,10 +247,14 @@ extension WeatherViewController:  CLLocationManagerDelegate /* protocol for loca
         
     }
     
+//    if there is an error
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-//        had an error
+        
+//        move to the main thread
         DispatchQueue.main.async {
-//            self.searchTextField.placeholder = "Error"
+            
+//            display "Error
+            self.searchTextField.placeholder = "Error"
         }
         
     }

@@ -29,6 +29,7 @@ struct WeatherManager {
     var delegate: WeatherManagerDelegate?
     
 //    make a function to fetch the weather
+//    give the units argument a default value of imperial
     func fetchWeather(cityName: String, _ units: String) {
         
 //        update the url to include the city
@@ -50,37 +51,44 @@ struct WeatherManager {
     }
     
     func performRequest(with urlString: String) {
-//        make a url
-        if let url = URL(string: urlString) {
+        
+//        optimize the phone to parse the json quickly
+        DispatchQueue.global(qos: .userInteractive).async {
+                    
+//            make a url
+            if let url = URL(string: urlString) {
 
-//            make a url session
-            let session = URLSession(configuration: .default)
-            
-//            give the session a task
-            
-//            completion handler (the stuff in the braces aka A CLOSURE) runs a function when the task is trying to retrieve the url
-            let task = session.dataTask(with: url) { (data, response, error) in
-                        if error != nil {
-                            self.delegate?.didFailWithError(error!)
-                //            the return by itself ends the execution of the function
-                            return
-                        }
-                        
-//                      makes sure we dont have an optional with the data coming out
-                        if let safeData = data {
-//                            makes sure that the weather is not an optional,
-//                            since the function may not be able to retrieve the weather if it cant decode the JSON
-                            if let weather = self.parseJSON(safeData) {
-                                self.delegate?.didUpdateWeather(self, weather)
-                                
+//                make a url session
+                let session = URLSession(configuration: .default)
+                
+//                give the session a task
+                
+//                completion handler (the stuff in the braces aka A CLOSURE) runs a function when the task is trying to retrieve the url
+                let task = session.dataTask(with: url) { (data, response, error) in
+                            if error != nil {
+                                self.delegate?.didFailWithError(error!)
+//                                the return by itself ends the execution of the function
+                                return
                             }
                             
-                        }
+//                    makes sure we dont have an optional with the data coming out
+                            if let safeData = data {
+                                    
+//                                makes sure that the weather is not an optional,
+//                                since the function may not be able to retrieve the weather if it cant decode the JSON
+                                    if let weather = self.parseJSON(safeData) {
+                                        self.delegate?.didUpdateWeather(self, weather)
+                                        
+                                    }
+                                
+                            }
+                }
+                
+//                start the task
+                task.resume()
+                
             }
-            
-//            start the task
-            task.resume()
-            
+
         }
     }
     
@@ -97,11 +105,12 @@ struct WeatherManager {
             let temp = decodedData.main.temp
             let temp_min = decodedData.main.temp_min
             let temp_max = decodedData.main.temp_max
-            let description = decodedData.weather[0].description
+            let description = decodedData.weather[0].main
+            let country = decodedData.sys.country
             
 //            make a weather model that has properties of the weather
 //            we can easily pull out details from the weather by retrieving properties from this object
-            let weather = WeatherModel(conditionId: id, cityName: name, temperature: temp, description: description, temp_min: temp_min, temp_max: temp_max)
+            let weather = WeatherModel(conditionId: id, cityName: name, temperature: temp, description: description, temp_min: temp_min, temp_max: temp_max, country: country)
             
 //            return the weather object
             return weather
