@@ -25,6 +25,7 @@ struct WeatherModel {
     let description: String
     let temp_min: Double
     let temp_max: Double
+    let country: String
     
 //    temperatureString is a computed variable
     
@@ -43,9 +44,8 @@ struct WeatherModel {
         return "H: \(String(format: "%.0f", temp_max))"
     }
     
-    
 //    uses the id of the weather to determine which weather image should be displayed
-    var conditionName: String {
+    var conditionImage: String {
         switch conditionId {
         case 200...232:
             return "cloud.bolt"
@@ -72,6 +72,7 @@ struct WeatherModel {
         default:
             return "cloud"
         }
+        
     }
     
 }
